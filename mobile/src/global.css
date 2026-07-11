@@ -1,0 +1,7 @@
+/* Minimal web reset. react-native-web handles most styling itself, this
+   just removes the browser's default body margin so the app fills the
+   viewport edge to edge like it does natively. */
+body {
+  margin: 0;
+  background-color: #F2F4EF;
+}

@@ -1,0 +1,24 @@
+# --- backend (Python) ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.db
+.env
+
+# --- mobile (Expo / Node) ---
+node_modules/
+dist/
+.expo/
+*.log
+.env
+
+# keep the example env files, only real .env files are excluded above
+!.env.example
+
+# --- editors / OS ---
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
