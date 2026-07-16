@@ -1,14 +1,15 @@
-"""
-Rule-based coach logic.
-
-Turns a detected streak into a short message. Plain if/else rules, not a
-model, because the brief specifically wants gentle prompts rather than
-alerts, and it's much easier to guarantee a rule-based system never
-produces an alarming message than to guarantee that of a generative one.
-If a small LLM step gets added later to vary the phrasing, it should sit
-downstream of these rules and never get to override what they decide to
-say in the first place.
-"""
+# ------------------------------------------------------
+# coach.py — Rule-Based Coach Logic
+# ------------------------------------------------------
+# Turns a detected streak into a short message. Plain
+# if/else rules rather than a model, because the brief
+# specifically wants gentle prompts rather than alerts, and
+# it's much easier to guarantee a rule-based system never
+# produces an alarming message than to guarantee that of a
+# generative one. If a small LLM step gets added later to
+# vary the phrasing, it should sit downstream of these
+# rules and never get to override what they decide to say
+# ------------------------------------------------------
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -21,9 +22,9 @@ class CoachMessage:
     metric: str
 
 
-# Wording depends on the user's coaching_style (see User model). Gentle
-# is the default; direct is opt-in for people who find the soft version
-# patronising rather than reassuring.
+# Wording depends on the user's coaching_style (see the User model).
+# Gentle is the default, direct is opt-in for people who find the soft
+# version patronising rather than reassuring.
 _TEMPLATES = {
     "sleep": {
         "gentle": "Sleep's been lower than usual the last {streak} nights. No pressure, just flagging it in case an early one helps tonight.",
@@ -57,10 +58,10 @@ def build_coach_message(metric, streak, coaching_style="gentle"):
 
 def should_send(metric, last_sent_at, min_gap_days=3):
     """
-    Basic alert-fatigue guard: don't resend a message about the same
-    metric more often than `min_gap_days`, even if the pattern is still
-    active. The brief calls this risk out directly, so it's handled here
-    rather than left as a stretch goal.
+    Basic alert-fatigue guard, don't resend a message about the same
+    metric more often than min_gap_days, even if the pattern is still
+    active. The brief calls this risk out directly, so it's handled
+    here rather than left as a stretch goal.
     """
     if last_sent_at is None:
         return True

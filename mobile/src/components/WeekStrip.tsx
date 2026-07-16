@@ -1,6 +1,16 @@
+// ------------------------------------------------------
+// WeekStrip.tsx — This Week At A Glance
+// ------------------------------------------------------
+// Seven cells, one per day, coloured against the person's
+// own sleep data. Built against the real calendar dates
+// rather than whatever the API happened to return, see the
+// comment further down for why that distinction matters
+// ------------------------------------------------------
+
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Colors, Radius, Spacing, Type } from '@/constants/theme';
+import { useTheme } from '@/lib/theme-context';
 import type { DailyLogEntry } from '@/lib/api';
 
 type WeekStripProps = {
@@ -25,6 +35,7 @@ const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // indexed by Date#getD
 // a way to switch which metric you're looking at, this should take the
 // active metric as a prop instead of hardcoding sleep_hours.
 export function WeekStrip({ logs }: WeekStripProps) {
+  const { accent } = useTheme();
   const byDate = new Map(logs.map((log) => [log.date, log]));
 
   const today = new Date();
@@ -39,10 +50,11 @@ export function WeekStrip({ logs }: WeekStripProps) {
       {days.map((d) => {
         const key = toDateKey(d);
         const log = byDate.get(key) ?? null;
+        const isToday = key === toDateKey(today);
         return (
           <View key={key} style={styles.cellWrapper}>
-            <View style={[styles.cell, cellStyle(log)]} />
-            <Text style={styles.dayLabel}>{DAY_LETTERS[d.getDay()]}</Text>
+            <View style={[styles.cell, cellStyle(log, accent.base), isToday && styles.cellToday]} />
+            <Text style={[styles.dayLabel, isToday && { color: accent.base }]}>{DAY_LETTERS[d.getDay()]}</Text>
           </View>
         );
       })}
@@ -61,11 +73,11 @@ function toDateKey(d: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function cellStyle(log: DailyLogEntry | null) {
+function cellStyle(log: DailyLogEntry | null, accentColor: string) {
   if (!log || log.sleep_hours == null) {
     return styles.cellEmpty;
   }
-  return log.sleep_hours < 6 ? styles.cellFlagged : styles.cellGood;
+  return log.sleep_hours < 6 ? styles.cellFlagged : { backgroundColor: accentColor };
 }
 
 const styles = StyleSheet.create({
@@ -78,20 +90,22 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   cell: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.sm,
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
+  },
+  cellToday: {
+    borderWidth: 2,
+    borderColor: Colors.ink,
   },
   cellEmpty: {
     backgroundColor: Colors.mist,
   },
-  cellGood: {
-    backgroundColor: Colors.moss,
-  },
   cellFlagged: {
-    backgroundColor: Colors.dawn,
+    backgroundColor: Colors.attention,
   },
   dayLabel: {
-    ...Type.caption,
+    ...Type.label,
+    color: Colors.inkSoft,
   },
 });

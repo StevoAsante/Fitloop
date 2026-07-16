@@ -1,12 +1,14 @@
-"""
-Data models for FitLoop.
-
-Sleep, steps, mood and study hours all live on one DailyLog row per user
-per day rather than in separate tables. The anomaly detection and coach
-logic both need a full day's metrics together anyway, and splitting them
-out would just mean joining them back on every read. Revisit this if a
-feature ever needs multiple entries per day (e.g. logging naps).
-"""
+# ------------------------------------------------------
+# models.py — Database Models
+# ------------------------------------------------------
+# SQLAlchemy models for users, daily logs, and the social
+# layer (follows, reactions, comments). Sleep, steps, mood
+# and study hours all live on one DailyLog row per user per
+# day rather than in separate tables, the anomaly detection
+# and coach logic both need a full day's metrics together
+# anyway, so splitting them out would just mean joining them
+# back on every read
+# ------------------------------------------------------
 
 from datetime import date, datetime
 
@@ -27,9 +29,17 @@ class User(db.Model):
 
     # A user preference, not a fixed setting, because the same alert
     # phrased two ways gets very different reactions. "gentle" softens
-    # the wording; "direct" is shorter and more blunt. Default to gentle
-    # since that matches the brief (prompts, not strict targets).
+    # the wording, "direct" is shorter and more blunt. Default to
+    # gentle since that matches the brief, prompts rather than targets.
     coaching_style = db.Column(db.String(20), default="gentle")
+
+    # Which of the five prestige colours (see PRESTIGE_TONES on the
+    # mobile side, constants/theme.ts) this person picked at sign up.
+    # Stored as the plain string key, e.g. "royal_purple", rather than
+    # a hex code, so the actual colour values can change later without
+    # a migration, the client just looks the key up against whatever
+    # palette it currently ships.
+    theme_color = db.Column(db.String(20), default="royal_purple")
 
     logs = db.relationship("DailyLog", backref="user", lazy=True)
 
@@ -61,12 +71,10 @@ class DailyLog(db.Model):
 
 
 class FriendConnection(db.Model):
-    """
-    A one-directional follow rather than a mutual friendship. Simpler to
-    reason about for a prototype feed (A can see B's posts without B
-    accepting anything), and easy to upgrade to mutual approval later if
-    the usability test says people want that instead.
-    """
+    # A one-directional follow rather than a mutual friendship. Simpler
+    # to reason about for a prototype feed, A can see B's posts without
+    # B accepting anything, and easy to upgrade to mutual approval later
+    # if the usability test says people want that instead.
     __tablename__ = "friend_connections"
 
     id = db.Column(db.Integer, primary_key=True)

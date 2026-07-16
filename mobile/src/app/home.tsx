@@ -1,19 +1,54 @@
+// ------------------------------------------------------
+// home.tsx — Home Screen
+// ------------------------------------------------------
+// The hero seal, this week's strip, any coach messages,
+// and a quick way to log today. Pulls week-logs and the
+// coach-check together on load and again on pull to
+// refresh
+// ------------------------------------------------------
+
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
 
 import { CoachMessageCard } from '@/components/CoachMessageCard';
+import { PrestigeSeal } from '@/components/PrestigeSeal';
 import { WeekStrip } from '@/components/WeekStrip';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TextField } from '@/components/ui/TextField';
-import { Colors, Spacing, Type } from '@/constants/theme';
+import { Colors, Radius, Spacing, Type } from '@/constants/theme';
 import * as api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { useTheme } from '@/lib/theme-context';
+
+// A day counts as "logged" if any of the four metrics has a value.
+// Counting backwards from today rather than from the start of the
+// array so a gap earlier in the week doesn't break a streak that's
+// still running right now.
+function computeLoggingStreak(logs: api.DailyLogEntry[]) {
+  const byDate = new Map(logs.map((log) => [log.date, log]));
+  let streak = 0;
+  const cursor = new Date();
+
+  while (true) {
+    const key = cursor.toISOString().slice(0, 10);
+    const log = byDate.get(key);
+    const hasAnyMetric =
+      log && (log.sleep_hours != null || log.steps != null || log.mood != null || log.study_hours != null);
+    if (!hasAnyMetric) break;
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return streak;
+}
 
 export default function HomeScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { accent } = useTheme();
   const [logs, setLogs] = useState<api.DailyLogEntry[]>([]);
   const [messages, setMessages] = useState<api.CoachMessage[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -49,11 +84,6 @@ export default function HomeScreen() {
     setIsRefreshing(false);
   };
 
-  const handleLogout = () => {
-    logout();
-    router.replace('/login');
-  };
-
   // Sleep and steps only, matching the two metrics the backend's
   // METRIC_RULES actually coaches on right now. Mood and study hours
   // are real fields in the API already, they're just not wired into a
@@ -79,6 +109,8 @@ export default function HomeScreen() {
     }
   };
 
+  const streak = computeLoggingStreak(logs);
+
   return (
     <ScreenContainer
       scroll
@@ -86,12 +118,19 @@ export default function HomeScreen() {
     >
       <View style={styles.header}>
         <Text style={styles.title}>Hey {user?.username}</Text>
-        <Text onPress={handleLogout} style={styles.logout}>
-          Log out
-        </Text>
+        <Feather name="settings" size={22} color={Colors.inkSoft} onPress={() => router.push('/settings')} />
       </View>
 
       {loadError ? <Text style={styles.error}>{loadError}</Text> : null}
+
+      <View style={styles.heroCard}>
+        <PrestigeSeal value={streak} label="day streak" tone={accent} />
+        <Text style={styles.heroCaption}>
+          {streak === 0
+            ? "Log today to start a new streak."
+            : `${streak} day${streak === 1 ? '' : 's'} logged in a row. Keep it going.`}
+        </Text>
+      </View>
 
       <Text style={styles.sectionLabel}>This week</Text>
       <WeekStrip logs={logs} />
@@ -130,9 +169,19 @@ const styles = StyleSheet.create({
     ...Type.display,
     color: Colors.ink,
   },
-  logout: {
-    ...Type.label,
-    color: Colors.inkSoft,
+  heroCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  heroCaption: {
+    ...Type.body,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
   },
   sectionLabel: {
     ...Type.label,

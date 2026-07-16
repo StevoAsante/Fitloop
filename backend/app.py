@@ -1,15 +1,16 @@
-"""
-Minimal Flask API for FitLoop.
-
-This is the boundary the mobile app (Flutter or React Native, still
-being decided) will talk to over HTTP. Enough endpoints to create an
-account, log a day's data, and get back any coach message, nothing more
-yet. See the comment on /login before this touches real user data.
-"""
+# ------------------------------------------------------
+# app.py — FitLoop Flask API
+# ------------------------------------------------------
+# The boundary the mobile app talks to over HTTP. Covers
+# accounts, daily logging, the coach check, and account
+# settings, nothing more yet. See the comment on /login
+# before this touches real user data
+# ------------------------------------------------------
 
 from datetime import date, datetime
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 from models import db, User, DailyLog
 from anomaly_detection import detect_streak
@@ -18,6 +19,15 @@ from coach import build_coach_message
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///fitloop.db"
 db.init_app(app)
+
+# Without this, the browser blocks every request the moment the mobile
+# app runs on web, since it's then a cross-origin call (the Expo dev
+# server and this API sit on different ports) and Flask doesn't send
+# CORS headers by default. Native builds never hit this, a phone isn't
+# a browser, which is exactly why the bug only ever showed up on web.
+# Wide open for local development, tighten to the actual deployed
+# origin before this goes anywhere near production.
+CORS(app)
 
 with app.app_context():
     db.create_all()
@@ -40,14 +50,31 @@ METRIC_RULES = {
 }
 
 
+def serialize_user(user):
+    # One place that decides what a "user" looks like on the wire,
+    # used by register, login, and settings, so all three stay in sync
+    # automatically instead of three separate dicts slowly drifting
+    # apart as fields get added.
+    return {
+        "id": user.id,
+        "username": user.username,
+        "theme_color": user.theme_color,
+        "coaching_style": user.coaching_style,
+    }
+
+
 @app.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
-    user = User(username=data["username"], email=data["email"])
+    user = User(
+        username=data["username"],
+        email=data["email"],
+        theme_color=data.get("theme_color", "royal_purple"),
+    )
     user.set_password(data["password"])
     db.session.add(user)
     db.session.commit()
-    return jsonify({"id": user.id, "username": user.username}), 201
+    return jsonify(serialize_user(user)), 201
 
 
 @app.route("/login", methods=["POST"])
@@ -61,7 +88,28 @@ def login():
     # Returning the raw id instead of a token is fine for local testing,
     # nothing past that. Swap for a signed JWT before the mobile app
     # talks to this over a real network.
-    return jsonify({"id": user.id, "username": user.username})
+    return jsonify(serialize_user(user))
+
+
+@app.route("/users/<int:user_id>/settings", methods=["PATCH"])
+def update_settings(user_id):
+    """
+    Updates whichever of theme_color / coaching_style were sent, leaves
+    the other alone if it wasn't part of the request. The mobile app's
+    settings screen saves each change the moment someone taps it rather
+    than waiting on a separate "Save" button, so this needs to cope with
+    a request that only touches one field at a time.
+    """
+    user = User.query.get_or_404(user_id)
+    data = request.get_json()
+
+    if "theme_color" in data:
+        user.theme_color = data["theme_color"]
+    if "coaching_style" in data:
+        user.coaching_style = data["coaching_style"]
+
+    db.session.commit()
+    return jsonify(serialize_user(user))
 
 
 @app.route("/logs", methods=["POST"])

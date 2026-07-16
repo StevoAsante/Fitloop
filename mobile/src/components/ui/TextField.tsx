@@ -1,21 +1,46 @@
+// ------------------------------------------------------
+// TextField.tsx — Labelled Text Input
+// ------------------------------------------------------
+// Label on top, optional error underneath. Border picks
+// up the active prestige colour on focus so it's obvious
+// which field has focus without relying on the cursor
+// blink alone, keyboard users need that too, not just a
+// nice-to-have for mouse/touch
+// ------------------------------------------------------
+
+import { useState } from 'react';
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { Colors, Radius, Spacing, Type } from '@/constants/theme';
+import { useTheme } from '@/lib/theme-context';
 
 type TextFieldProps = TextInputProps & {
   label: string;
   error?: string;
 };
 
-export function TextField({ label, error, style, ...inputProps }: TextFieldProps) {
+export function TextField({ label, error, style, onFocus, onBlur, ...inputProps }: TextFieldProps) {
+  const { accent } = useTheme();
+  const [isFocused, setIsFocused] = useState(false);
+
+  const borderColor = error ? Colors.danger : isFocused ? accent.base : Colors.mist;
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
-        style={[styles.input, error && styles.inputError, style]}
+        style={[styles.input, { borderColor, borderWidth: isFocused ? 2 : 1 }, style]}
         placeholderTextColor={Colors.inkSoft}
         autoCapitalize="none"
         autoCorrect={false}
+        onFocus={(e) => {
+          setIsFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setIsFocused(false);
+          onBlur?.(e);
+        }}
         {...inputProps}
       />
       {/* Reserving space for the error message even when there isn't one
@@ -41,13 +66,11 @@ const styles = StyleSheet.create({
     color: Colors.ink,
     backgroundColor: Colors.card,
     borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.mist,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 4,
-  },
-  inputError: {
-    borderColor: Colors.danger,
+    // One less vertical pixel than the unfocused state gets a 2px
+    // border, so the field doesn't visibly grow by a pixel each way
+    // when it gains focus.
+    paddingVertical: Spacing.sm + 3,
   },
   error: {
     ...Type.caption,

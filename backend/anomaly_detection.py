@@ -1,12 +1,14 @@
-"""
-Statistical anomaly detection for daily health logs.
-
-No trained model here on purpose. A rolling z-score against each user's
-own recent history is easier to justify in a report, easier to debug
-when it misfires, and doesn't need training data FitLoop doesn't have
-yet. The clustering / engagement-prediction stretch goals can sit on top
-of this later without changing how this part works.
-"""
+# ------------------------------------------------------
+# anomaly_detection.py — Statistical Pattern Detection
+# ------------------------------------------------------
+# Rolling z-scores and streak detection over each user's
+# own recent logs. No trained model here on purpose, a
+# z-score against someone's own history is easier to
+# justify in the report, easier to debug when it misfires,
+# and doesn't need training data FitLoop doesn't have yet.
+# The clustering / engagement-prediction stretch goals can
+# sit on top of this later without changing how it works
+# ------------------------------------------------------
 
 from dataclasses import dataclass
 from statistics import mean, stdev
@@ -25,7 +27,7 @@ class Anomaly:
 def _z_score(value, baseline):
     if len(baseline) < 3:
         # Not enough history to know what's normal yet. Returning 0
-        # here means a brand-new user just gets no anomalies for their
+        # here means a brand new user just gets no anomalies for their
         # first few days, rather than an error.
         return 0.0
 
@@ -44,13 +46,14 @@ def _z_score(value, baseline):
 def detect_metric_anomaly(metric_name, recent_values, baseline_window=7, threshold=1.5):
     """
     Compares the most recent value for one metric against the mean and
-    standard deviation of the preceding `baseline_window` days.
+    standard deviation of the preceding baseline_window days.
 
     threshold=1.5 standard deviations is looser than the textbook 2.0,
-    deliberately. Sleep and step counts are noisy day to day, and a
-    stricter threshold either misses real changes or fires often enough
-    that people start ignoring it. This is a starting guess, not a
-    tuned value, expect to adjust it after the usability test.
+    on purpose. Sleep and step counts are noisy day to day, a stricter
+    threshold either misses real changes or fires often enough that
+    people start ignoring it. This is a starting guess rather than a
+    tuned value, adjust it once there's real usability test data to
+    tune it against.
     """
     if len(recent_values) < baseline_window + 1:
         return None
@@ -77,10 +80,9 @@ def detect_metric_anomaly(metric_name, recent_values, baseline_window=7, thresho
 
 def detect_streak(recent_values, condition, min_streak=3):
     """
-    Flags a run of consecutive days meeting `condition` (e.g. "below 6
-    hours sleep"), rather than a single bad day. One late night isn't
-    worth a prompt; three in a row is the actual pattern the brief wants
-    caught.
+    Flags a run of consecutive days meeting condition (e.g. "below 6
+    hours sleep") rather than a single bad day. One late night isn't
+    worth a prompt, three in a row is the actual pattern worth catching.
     """
     streak = 0
     for value in reversed(recent_values):

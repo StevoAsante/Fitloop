@@ -1,3 +1,11 @@
+// ------------------------------------------------------
+// ScreenContainer.tsx — Screen Wrapper
+// ------------------------------------------------------
+// Safe area, keyboard avoidance, and the background colour
+// every screen needs, handled once here rather than copied
+// into each screen file
+// ------------------------------------------------------
+
 import {
   KeyboardAvoidingView,
   Platform,

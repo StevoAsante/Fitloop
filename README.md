@@ -33,9 +33,11 @@ npx expo start
 
 ## Where things stand
 
-Working end to end: registration, login, daily logging, the coach
-picking up on sleep/activity streaks and turning them into a message,
-the week view on the home screen.
+Working end to end: registration (including picking a prestige colour),
+login, daily logging, the coach picking up on sleep/activity streaks and
+turning them into a message, the streak seal and week view on the home
+screen, and a settings screen for changing colour or coaching style
+later.
 
 Not built yet, by design rather than by accident, each is documented in
 more detail in its own folder's README:
@@ -43,7 +45,17 @@ more detail in its own folder's README:
 - Social feed (Comment and Reaction exist as backend models, no routes or screens yet)
 - Session persistence across app restarts
 - Mood and study hours in the quick-log form (the coach doesn't reason about either metric yet)
-- A custom typeface (system fonts for now)
+
+## Design direction
+
+Strava-shaped, not Strava-coloured: bold condensed stat numbers, a dark
+hero card for the day's headline figure, cards and pills rather than
+flat lists. The accent is a "prestige" colour the person picks for
+themselves, one of five jewel tones (Royal Purple, Emerald, Sapphire,
+Burgundy, Gold), set at registration and changeable any time in
+Settings, so the whole app is tinted in a colour that's actually theirs
+rather than a fixed house brand. See `mobile/README.md`'s design system
+section for the full reasoning, including the two custom typefaces.
 
 ## Why the AI coach is rule-based, not a trained model
 

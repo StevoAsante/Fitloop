@@ -1,3 +1,11 @@
+// ------------------------------------------------------
+// login.tsx — Log In Screen
+// ------------------------------------------------------
+// First thing most people see, so it carries the wordmark
+// treatment rather than jumping straight to the form,
+// everything else in the app is calmer than this on purpose
+// ------------------------------------------------------
+
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
@@ -7,9 +15,11 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { TextField } from '@/components/ui/TextField';
 import { Colors, Spacing, Type } from '@/constants/theme';
 import { useAuth } from '@/lib/auth-context';
+import { useTheme } from '@/lib/theme-context';
 
 export default function LoginScreen() {
   const { login, isLoading, error } = useAuth();
+  const { accent } = useTheme();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -24,6 +34,7 @@ export default function LoginScreen() {
     <ScreenContainer>
       <View style={styles.content}>
         <View>
+          <Text style={[styles.wordmark, { color: accent.base }]}>FitLoop</Text>
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Log in to see how your week&apos;s going.</Text>
         </View>
@@ -41,7 +52,7 @@ export default function LoginScreen() {
         </View>
 
         <Link href="/register" style={styles.link}>
-          <Text style={styles.linkText}>New here? Create an account</Text>
+          <Text style={[styles.linkText, { color: accent.base }]}>New here? Create an account</Text>
         </Link>
       </View>
     </ScreenContainer>
@@ -53,6 +64,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     gap: Spacing.xl,
+  },
+  wordmark: {
+    ...Type.wordmark,
+    marginBottom: Spacing.lg,
   },
   title: {
     ...Type.display,
@@ -75,6 +90,5 @@ const styles = StyleSheet.create({
   },
   linkText: {
     ...Type.label,
-    color: Colors.dusk,
   },
 });
