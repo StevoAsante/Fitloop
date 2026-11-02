@@ -39,10 +39,22 @@ turning them into a message, the streak seal and week view on the home
 screen, and a settings screen for changing colour or coaching style
 later.
 
+Workout tracking is in too, on all three platforms (iOS, Android and
+web, from the same code). There's a Train tab with a live workout
+logger (sets saved as you go, rest timer, progression suggestions,
+record detection), a Plan tab for routines and a weekly or rotating
+schedule, a searchable exercise library with custom exercises, and a
+Progress tab with a session calendar, weekly sets per muscle and
+history. The coach also notices when two planned sessions in a row
+get missed. To sanity check the API side by hand, run
+`python training_test.py` from `backend/` (it wipes `fitloop.db`).
+
 Not built yet, by design rather than by accident, each is documented in
 more detail in its own folder's README:
 
-- Social feed (Comment and Reaction exist as backend models, no routes or screens yet)
+- Social feed (Comment and Reaction exist as backend models, no routes or screens yet), including sharing PRs and finished workouts to it
+- Pounds as a display unit (everything is stored in kg, the screens just show kg for now)
+- Rest-timer notifications while the app is in the background
 - Session persistence across app restarts
 - Mood and study hours in the quick-log form (the coach doesn't reason about either metric yet)
 

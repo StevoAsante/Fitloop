@@ -34,6 +34,10 @@ _TEMPLATES = {
         "gentle": "It's been a quieter {streak} days activity-wise. A short walk tomorrow could be a nice reset, only if you fancy it.",
         "direct": "{streak} low-activity days in a row. A 10-minute walk would break the pattern.",
     },
+    "training": {
+        "gentle": "The last {streak} planned sessions didn't happen. Life gets busy, even a short version of the next one keeps the habit ticking over.",
+        "direct": "{streak} planned sessions missed in a row. Do a shortened version of the next one rather than skipping it too.",
+    },
     "study_hours": {
         "gentle": "Study hours have crept later into the night recently. Worth keeping an eye on, especially alongside sleep.",
         "direct": "Late-night study is trending up. Consider moving some of it earlier in the day.",
@@ -51,7 +55,11 @@ def build_coach_message(metric, streak, coaching_style="gentle"):
 
     return CoachMessage(
         headline=headline,
-        detail=f"Based on the last {streak} days of {metric.replace('_', ' ')} data.",
+        detail=(
+            f"Based on {streak} missed planned sessions."
+            if metric == "training"
+            else f"Based on the last {streak} days of {metric.replace('_', ' ')} data."
+        ),
         metric=metric,
     )
 

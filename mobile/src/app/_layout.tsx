@@ -32,10 +32,10 @@ import { ThemeProvider } from '@/lib/theme-context';
 // even though it's just normal async loading.
 SplashScreen.preventAutoHideAsync();
 
-// No tab bar. Right now there's a linear flow (login or register, then
-// home, with settings a step off home), tabs are worth adding once
-// there's a second top-level destination, the social feed, to switch
-// between.
+// The tab bar itself lives in (app)/_layout.tsx. This stack just holds
+// the signed-out screens, the (app) tab group, and the full-screen
+// pages that sit on top of the tabs (settings, the workout logger,
+// the routine and exercise screens).
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Fraunces_600SemiBold,

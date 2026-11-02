@@ -3,8 +3,10 @@
 # ------------------------------------------------------
 # The boundary the mobile app talks to over HTTP. Covers
 # accounts, daily logging, the coach check, and account
-# settings, nothing more yet. See the comment on /login
-# before this touches real user data
+# settings. The workout side (library, routines, plan, sets,
+# records) lives in training.py and gets registered below.
+# See the comment on /login before this touches real user
+# data
 # ------------------------------------------------------
 
 from datetime import date, datetime
@@ -15,6 +17,8 @@ from flask_cors import CORS
 from models import db, User, DailyLog
 from anomaly_detection import detect_streak
 from coach import build_coach_message
+from seed_exercises import seed_exercises
+from training import training, count_missed_planned_sessions
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///fitloop.db"
@@ -29,8 +33,17 @@ db.init_app(app)
 # origin before this goes anywhere near production.
 CORS(app)
 
+# The gym routes sit in their own blueprint so this file stays about
+# accounts and daily logs. Importing training also pulls in
+# training_models, which is what lets create_all() below see the new
+# tables.
+app.register_blueprint(training)
+
 with app.app_context():
     db.create_all()
+    # Does nothing once the library has rows, so restarting the server
+    # never duplicates or overwrites anything.
+    seed_exercises()
 
 # Maps a coach-relevant metric to the DailyLog column it lives in and the
 # condition that counts as worth flagging. Extend this as coach.py grows
@@ -188,6 +201,17 @@ def coach_check(user_id):
             message = build_coach_message(metric, streak_len, user.coaching_style)
             if message:
                 messages.append(message.__dict__)
+
+    # Training isn't a DailyLog column, so it can't live in METRIC_RULES.
+    # Instead it asks the plan how many scheduled sessions in a row were
+    # skipped. The coach's own streak threshold is 3 days for sleep and
+    # steps, but two missed sessions is already a pattern when you only
+    # train three or four days a week, so this one fires at 2.
+    missed = count_missed_planned_sessions(user_id, date.today())
+    if missed >= 2:
+        message = build_coach_message("training", missed, user.coaching_style)
+        if message:
+            messages.append(message.__dict__)
 
     return jsonify({"messages": messages})
 

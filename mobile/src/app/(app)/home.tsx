@@ -8,7 +8,7 @@
 // ------------------------------------------------------
 
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 
@@ -22,6 +22,7 @@ import { TextField } from '@/components/ui/TextField';
 import { Colors, Radius, Spacing, Type } from '@/constants/theme';
 import * as api from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { localDateKey } from '@/lib/format';
 import { useTheme } from '@/lib/theme-context';
 
 // A day counts as "logged" if any of the four metrics has a value.
@@ -53,6 +54,7 @@ export default function HomeScreen() {
   const [messages, setMessages] = useState<api.CoachMessage[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [today, setToday] = useState<api.TodayState | null>(null);
 
   const [sleepHours, setSleepHours] = useState('');
   const [steps, setSteps] = useState('');
@@ -62,12 +64,14 @@ export default function HomeScreen() {
   const load = useCallback(async () => {
     if (!user) return;
     try {
-      const [weekLogs, coachCheck] = await Promise.all([
+      const [weekLogs, coachCheck, todayState] = await Promise.all([
         api.getLogs(user.id),
         api.getCoachCheck(user.id),
+        api.getToday(user.id, localDateKey()),
       ]);
       setLogs(weekLogs);
       setMessages(coachCheck.messages);
+      setToday(todayState);
       setLoadError(null);
     } catch (err) {
       setLoadError(err instanceof api.ApiError ? err.message : 'Could not reach the server.');
@@ -141,6 +145,21 @@ export default function HomeScreen() {
         </View>
       ))}
 
+      {/* A nudge towards the Train tab rather than a second copy of it.
+          Shows an open session first, since that's the thing most worth
+          getting back to, then today's planned routine, and nothing at
+          all on a rest day so the home screen doesn't nag. */}
+      {today?.active_workout_id || today?.routine ? (
+        <Pressable onPress={() => router.push('/train')}>
+          <Card tone="accent" style={styles.trainCard}>
+            <Text style={styles.sectionLabel}>{today.active_workout_id ? 'In progress' : 'Today'}</Text>
+            <Text style={styles.trainTitle}>
+              {today.active_workout_id ? 'Resume your workout' : today.routine?.name}
+            </Text>
+          </Card>
+        </Pressable>
+      ) : null}
+
       <Card style={styles.logCard}>
         <Text style={styles.sectionLabel}>Log today</Text>
         <TextField
@@ -195,6 +214,14 @@ const styles = StyleSheet.create({
   },
   messageSpacing: {
     marginTop: Spacing.md,
+  },
+  trainCard: {
+    marginTop: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  trainTitle: {
+    ...Type.title,
+    color: Colors.ink,
   },
   logCard: {
     marginTop: Spacing.lg,
